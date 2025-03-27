@@ -21,3 +21,20 @@ export interface Chatbot {
   apiKey?: string;
   analyticsUrl?: string;
 }
+
+export interface ChatbotFormData {
+  name: string;
+  avatarColor: string;
+  chatLogoImage?: string;
+  iconAvatarImage?: string;
+  staticImage?: string;
+  chatHeaderColor?: string;
+  gradient?: {
+    from: string;
+    to: string;
+  };
+  bodyBackgroundImage?: string;
+  welcomeText?: string;
+  apiKey?: string;
+  analyticsUrl?: string;
+}

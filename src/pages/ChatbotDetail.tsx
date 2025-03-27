@@ -9,6 +9,7 @@ import EditChatbotDialog from "@/components/EditChatbotDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { toast } from "sonner";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const ChatbotDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -196,6 +197,10 @@ const ChatbotDetail = () => {
         headerColor={chatbot.chatHeaderColor}
         welcomeMessage={chatbot.welcomeText}
         backgroundGradient={chatbot.gradient}
+        chatLogoImage={chatbot.chatLogoImage}
+        iconAvatarImage={chatbot.iconAvatarImage}
+        avatarColor={chatbot.avatarColor}
+        apiKey={chatbot.apiKey}
       />
 
       {/* Edit Dialog */}
@@ -208,7 +213,7 @@ const ChatbotDetail = () => {
 
       {/* QR Code Dialog */}
       <QRCodeDialog
-        url={chatbot.uniqueUrl}
+        url={`/chatbot/${chatbot.id}`}
         title={chatbot.name}
         isOpen={isQRDialogOpen}
         onClose={() => setIsQRDialogOpen(false)}

@@ -1,85 +1,92 @@
 
 import React, { useState, useEffect } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import ChatbotCard from "@/components/ChatbotCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getChatbots } from "@/services/chatbotService";
-import { PlusCircle, Search } from "lucide-react";
+import ChatbotCard from "@/components/ChatbotCard";
+import { Plus } from "lucide-react";
+import CreateChatbotDialog from "@/components/CreateChatbotDialog";
 
 const Index = () => {
-  const [chatbots, setChatbots] = useState(getChatbots());
   const [searchQuery, setSearchQuery] = useState("");
+  const [chatbots, setChatbots] = useState(getChatbots());
+  const [filteredChatbots, setFilteredChatbots] = useState(chatbots);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  // Function to refresh the chatbots list
+  // Update filtered bots when search query changes
+  useEffect(() => {
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    const filtered = chatbots.filter((bot) =>
+      bot.name.toLowerCase().includes(lowerCaseQuery)
+    );
+    setFilteredChatbots(filtered);
+  }, [searchQuery, chatbots]);
+
+  // Refresh the chatbots list
   const refreshChatbots = () => {
     setChatbots(getChatbots());
   };
 
-  const filteredChatbots = chatbots.filter(
-    (chatbot) =>
-      chatbot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chatbot.uniqueUrl.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Open create dialog
+  const handleCreateClick = () => {
+    setIsCreateDialogOpen(true);
+  };
 
   return (
-    <DashboardLayout>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight animate-fade-in-up">
-          My Chatbots
-        </h2>
-        <p className="text-muted-foreground mt-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          Manage and monitor all your chatbots from a single dashboard.
-        </p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-8">
+        <h1 className="text-3xl font-bold">Your Chatbots</h1>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <Input
             placeholder="Search chatbots..."
-            className="pl-9"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
+            className="w-full md:w-64"
           />
-        </div>
-        <Button className="gap-2 btn-transition">
-          <PlusCircle className="h-4 w-4" />
-          New Chatbot
-        </Button>
-      </div>
-
-      {filteredChatbots.length === 0 ? (
-        <div className="text-center py-12 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
-            <Search className="h-8 w-8 text-blue-600" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">No chatbots found</h3>
-          <p className="text-muted-foreground mb-6">
-            We couldn't find any chatbots matching your search criteria.
-          </p>
-          <Button className="gap-2 btn-transition">
-            <PlusCircle className="h-4 w-4" />
+          <Button
+            onClick={handleCreateClick}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-5 w-5" />
             Create New Chatbot
           </Button>
         </div>
+      </div>
+
+      {filteredChatbots.length === 0 ? (
+        <div className="text-center py-16 bg-gray-50 rounded-lg">
+          <h2 className="text-xl font-semibold mb-2">No chatbots found</h2>
+          <p className="text-muted-foreground mb-6">
+            {searchQuery
+              ? "No chatbots match your search criteria."
+              : "You haven't created any chatbots yet."}
+          </p>
+          <Button onClick={handleCreateClick}>Create Your First Chatbot</Button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredChatbots.map((chatbot, index) => (
-            <div 
-              key={chatbot.id} 
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${0.1 + index * 0.05}s` }}
-            >
-              <ChatbotCard 
-                chatbot={chatbot} 
-                onDelete={refreshChatbots}
-              />
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredChatbots.map((chatbot) => (
+            <ChatbotCard
+              key={chatbot.id}
+              chatbot={chatbot}
+              onDelete={refreshChatbots}
+            />
           ))}
         </div>
       )}
-    </DashboardLayout>
+
+      {/* Create New Chatbot Dialog */}
+      <CreateChatbotDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onSuccess={refreshChatbots}
+      />
+    </div>
   );
 };
 

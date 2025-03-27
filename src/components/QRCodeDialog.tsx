@@ -46,7 +46,8 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({
   // Create absolute URL from relative URL
   const getFullUrl = () => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}${url}`;
+    // Make sure the URL doesn't have a double slash
+    return `${baseUrl}${url.startsWith('/') ? url : '/' + url}`;
   };
 
   return (
@@ -63,14 +64,7 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({
               size={200}
               level="H"
               includeMargin
-              imageSettings={{
-                src: "/favicon.ico",
-                x: undefined,
-                y: undefined,
-                height: 24,
-                width: 24,
-                excavate: true,
-              }}
+              // Remove the imageSettings to get rid of the Lovable logo
             />
           </div>
           

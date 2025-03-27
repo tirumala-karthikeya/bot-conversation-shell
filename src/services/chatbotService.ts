@@ -1,5 +1,5 @@
 
-import { Chatbot } from "../types/chatbot";
+import { Chatbot, ChatbotFormData } from "../types/chatbot";
 
 // Sample data - in a real app this would come from an API
 let chatbots: Chatbot[] = [
@@ -7,7 +7,7 @@ let chatbots: Chatbot[] = [
     id: "hospitality-1",
     name: "Hospitality",
     avatarColor: "#f3f4f6",
-    uniqueUrl: "/chatbot/Hospitality/osrhz",
+    uniqueUrl: "/chatbot/hospitality-1",
     gradient: {
       from: "#5e81ac",
       to: "#88c0d0",
@@ -21,7 +21,7 @@ let chatbots: Chatbot[] = [
     id: "qsr-pizza-1",
     name: "qsr-pizza",
     avatarColor: "#3b82f6",
-    uniqueUrl: "/chatbot/qsr-pizza/om8ku",
+    uniqueUrl: "/chatbot/qsr-pizza-1",
     gradient: {
       from: "#3b82f6",
       to: "#60a5fa",
@@ -33,7 +33,7 @@ let chatbots: Chatbot[] = [
     id: "airlines-1",
     name: "Airlines",
     avatarColor: "#f3f4f6",
-    uniqueUrl: "/chatbot/Airlines/q11ho",
+    uniqueUrl: "/chatbot/airlines-1",
     gradient: {
       from: "#4c1d95",
       to: "#8b5cf6",
@@ -45,7 +45,7 @@ let chatbots: Chatbot[] = [
     id: "hrms-1",
     name: "HRMS",
     avatarColor: "#fb923c",
-    uniqueUrl: "/chatbot/HRMS/i3vx5",
+    uniqueUrl: "/chatbot/hrms-1",
     gradient: {
       from: "#ea580c",
       to: "#fb923c",
@@ -57,7 +57,7 @@ let chatbots: Chatbot[] = [
     id: "cars-dealers-1",
     name: "cars-dealers",
     avatarColor: "#f3f4f6",
-    uniqueUrl: "/chatbot/cars-dealers/csq81",
+    uniqueUrl: "/chatbot/cars-dealers-1",
     gradient: {
       from: "#0891b2",
       to: "#22d3ee",
@@ -70,7 +70,7 @@ let chatbots: Chatbot[] = [
     name: "Testing",
     avatarColor: "#3b82f6",
     avatarInitial: "T",
-    uniqueUrl: "/chatbot/Testing/9ui3x",
+    uniqueUrl: "/chatbot/testing-1",
     gradient: {
       from: "#2563eb",
       to: "#3b82f6",
@@ -107,4 +107,33 @@ export const deleteChatbot = (id: string): boolean => {
   const initialLength = chatbots.length;
   chatbots = chatbots.filter((chatbot) => chatbot.id !== id);
   return chatbots.length < initialLength;
+};
+
+export const createChatbot = (formData: ChatbotFormData): Chatbot => {
+  // Generate a simple ID based on name and timestamp
+  const id = `${formData.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now().toString(36)}`;
+  
+  // Create the new chatbot
+  const newChatbot: Chatbot = {
+    id,
+    name: formData.name,
+    avatarColor: formData.avatarColor,
+    uniqueUrl: `/chatbot/${id}`,
+    gradient: formData.gradient,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    chatLogoImage: formData.chatLogoImage,
+    iconAvatarImage: formData.iconAvatarImage,
+    staticImage: formData.staticImage,
+    bodyBackgroundImage: formData.bodyBackgroundImage,
+    chatHeaderColor: formData.chatHeaderColor,
+    welcomeText: formData.welcomeText,
+    apiKey: formData.apiKey,
+    analyticsUrl: formData.analyticsUrl
+  };
+  
+  // Add to the array
+  chatbots.push(newChatbot);
+  
+  return newChatbot;
 };

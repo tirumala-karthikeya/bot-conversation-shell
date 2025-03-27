@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, X, Mic, MicOff, Send } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 type MessageType = {
   type: "user" | "bot" | "error";
@@ -16,6 +17,10 @@ interface FloatingChatProps {
     from: string;
     to: string;
   };
+  chatLogoImage?: string;
+  iconAvatarImage?: string;
+  avatarColor: string;
+  apiKey?: string;
 }
 
 // Speech recognition setup
@@ -36,7 +41,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   chatbotName, 
   headerColor = "#3b82f6",
   welcomeMessage = "Hello! How can I help you today?",
-  backgroundGradient
+  backgroundGradient,
+  chatLogoImage,
+  iconAvatarImage,
+  avatarColor,
+  apiKey
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -45,6 +54,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [conversationId, setConversationId] = useState<string>("");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -140,29 +150,98 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     setQuery("");
 
     try {
-      // Simulate API call with timeout
-      setTimeout(() => {
-        // Add bot response based on user query
-        let botResponse = "I'm sorry, I don't have an answer for that right now.";
-        
-        if (userQuery.toLowerCase().includes("hello") || userQuery.toLowerCase().includes("hi")) {
-          botResponse = `Hello! How can I help you with ${chatbotName} today?`;
-        } else if (userQuery.toLowerCase().includes("help")) {
-          botResponse = `I can assist you with information about ${chatbotName}. What specific information do you need?`;
-        } else if (userQuery.toLowerCase().includes("features") || userQuery.toLowerCase().includes("what can you do")) {
-          botResponse = `As a ${chatbotName} assistant, I can help with:\n• Answering common questions\n• Providing information about our services\n• Assisting with troubleshooting\n• Connecting you with human support if needed`;
-        } else {
-          botResponse = `Thank you for your message about "${userQuery}". I'm still learning about ${chatbotName}. Would you like me to forward this to our support team?`;
+      if (apiKey) {
+        // If we have an API key, use it to call the real API
+        const payload = {
+          inputs: {},
+          query: userQuery,
+          response_mode: "streaming",
+          conversation_id: conversationId,
+          user: "user-123",
+          files: []
+        };
+
+        const response = await fetch(`https://api.next-agi.com/v1/chat-messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            Accept: "text/event-stream"
+          },
+          body: JSON.stringify(payload),
+          duplex: "half"
+        } as RequestInit);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
         
-        setMessages(prev => [...prev, { type: "bot", content: botResponse }]);
-        setIsLoading(false);
-      }, 1000);
+        // Add a bot message that we'll update
+        setMessages((prev) => [...prev, { type: "bot", content: "" }]);
+
+        if (reader) {
+          let fullAnswer = "";
+          
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            const text = decoder.decode(value, { stream: true });
+            text.split("\n").forEach((line) => {
+              if (line.startsWith("data: ")) {
+                try {
+                  const eventData = JSON.parse(line.slice(6));
+                  if (eventData.conversation_id) {
+                    setConversationId(eventData.conversation_id);
+                  }
+                  if (eventData.answer) {
+                    // Accumulate the answer chunks
+                    fullAnswer += eventData.answer;
+                    // Update the last message instead of adding a new one
+                    setMessages((prev) => {
+                      const newMessages = [...prev];
+                      newMessages[newMessages.length - 1] = { 
+                        type: "bot", 
+                        content: fullAnswer 
+                      };
+                      return newMessages;
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error parsing SSE event:", error);
+                }
+              }
+            });
+          }
+        }
+      } else {
+        // Simulate API call with timeout
+        setTimeout(() => {
+          // Add bot response based on user query
+          let botResponse = "I'm sorry, I don't have an answer for that right now.";
+          
+          if (userQuery.toLowerCase().includes("hello") || userQuery.toLowerCase().includes("hi")) {
+            botResponse = `Hello! How can I help you with ${chatbotName} today?`;
+          } else if (userQuery.toLowerCase().includes("help")) {
+            botResponse = `I can assist you with information about ${chatbotName}. What specific information do you need?`;
+          } else if (userQuery.toLowerCase().includes("features") || userQuery.toLowerCase().includes("what can you do")) {
+            botResponse = `As a ${chatbotName} assistant, I can help with:\n• Answering common questions\n• Providing information about our services\n• Assisting with troubleshooting\n• Connecting you with human support if needed`;
+          } else {
+            botResponse = `Thank you for your message about "${userQuery}". I'm still learning about ${chatbotName}. Would you like me to forward this to our support team?`;
+          }
+          
+          setMessages(prev => [...prev, { type: "bot", content: botResponse }]);
+        }, 1000);
+      }
     } catch (error: any) {
       setMessages((prev) => [
         ...prev,
         { type: "error", content: error.message || "Failed to connect to the chat service." }
       ]);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -181,6 +260,35 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       .replace(/<li>(.*?)(<\/li>\n*)+/g, '<ul class="list-disc pl-5 my-2">$&</ul>')
       // Convert regular line breaks
       .replace(/\n/g, '<br>');
+  };
+
+  // Render avatar for the chat header
+  const renderAvatar = () => {
+    return (
+      <div className="flex items-center gap-2">
+        <div 
+          className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden"
+          style={{ backgroundColor: avatarColor }}
+        >
+          {iconAvatarImage ? (
+            <img 
+              src={iconAvatarImage} 
+              alt={chatbotName} 
+              className="w-full h-full object-cover"
+            />
+          ) : chatLogoImage ? (
+            <img 
+              src={chatLogoImage} 
+              alt={chatbotName} 
+              className="w-full h-full object-contain p-1"
+            />
+          ) : (
+            <MessageCircle className="h-4 w-4 text-white" />
+          )}
+        </div>
+        <span className="font-semibold">{chatbotName}</span>
+      </div>
+    );
   };
 
   return (
@@ -209,7 +317,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 : headerColor
             }}
           >
-            <h2 className="text-base sm:text-lg font-semibold">{chatbotName}</h2>
+            {renderAvatar()}
             <button
               onClick={() => setIsOpen(false)}
               className="text-white hover:text-gray-200"

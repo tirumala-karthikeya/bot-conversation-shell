@@ -27,10 +27,11 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
     if (chatbot.iconAvatarImage) {
       return (
         <div 
-          className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center avatar-transition"
+          className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center avatar-transition cursor-pointer"
           style={{ 
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
           }}
+          onClick={() => navigate(`/chatbot/${chatbot.id}`)}
         >
           <img 
             src={chatbot.iconAvatarImage} 
@@ -42,11 +43,12 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
     } else if (chatbot.avatarInitial) {
       return (
         <div 
-          className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold avatar-transition"
+          className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold avatar-transition cursor-pointer"
           style={{ 
             backgroundColor: chatbot.avatarColor,
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
           }}
+          onClick={() => navigate(`/chatbot/${chatbot.id}`)}
         >
           {chatbot.avatarInitial}
         </div>
@@ -54,11 +56,12 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
     } else if (chatbot.chatLogoImage) {
       return (
         <div 
-          className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center avatar-transition"
+          className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center avatar-transition cursor-pointer"
           style={{ 
             backgroundColor: chatbot.avatarColor,
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
           }}
+          onClick={() => navigate(`/chatbot/${chatbot.id}`)}
         >
           <img 
             src={chatbot.chatLogoImage} 
@@ -70,11 +73,12 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
     } else {
       return (
         <div 
-          className="w-16 h-16 rounded-full flex items-center justify-center avatar-transition"
+          className="w-16 h-16 rounded-full flex items-center justify-center avatar-transition cursor-pointer"
           style={{ 
             backgroundColor: chatbot.avatarColor,
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
           }}
+          onClick={() => navigate(`/chatbot/${chatbot.id}`)}
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -111,6 +115,7 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
       updateChatbot(updatedChatbot);
       toast.success("Chatbot updated successfully");
       setIsEditDialogOpen(false);
+      if (onDelete) onDelete(); // Refresh list
     } catch (error) {
       toast.error("Failed to update chatbot");
       console.error("Error updating chatbot:", error);
@@ -185,6 +190,13 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
               variant="secondary" 
               size="sm" 
               className="btn-transition h-9 bg-blue-100 text-blue-700 hover:bg-blue-200"
+              onClick={() => {
+                if (chatbot.analyticsUrl) {
+                  window.open(chatbot.analyticsUrl, '_blank');
+                } else {
+                  toast.info("No analytics URL configured");
+                }
+              }}
             >
               <BarChart className="h-4 w-4 mr-2" />
               Analytics
@@ -222,7 +234,7 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
 
       {/* QR Code Dialog */}
       <QRCodeDialog
-        url={chatbot.uniqueUrl}
+        url={`/chatbot/${chatbot.id}`}
         title={chatbot.name}
         isOpen={isQRDialogOpen}
         onClose={() => setIsQRDialogOpen(false)}
