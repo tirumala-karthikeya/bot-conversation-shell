@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -43,11 +42,16 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({
     }
   };
 
-  // Create absolute URL from relative URL
+  // Create absolute URL from relative URL using window.location.origin
   const getFullUrl = () => {
-    const baseUrl = window.location.origin;
-    // Make sure the URL doesn't have a double slash
-    return `${baseUrl}${url.startsWith('/') ? url : '/' + url}`;
+    // Get the current origin (protocol + hostname + port)
+    const origin = window.location.origin;
+    
+    // Make sure the URL is properly formatted
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    
+    // Return the full URL
+    return `${origin}${cleanUrl}`;
   };
 
   return (
@@ -64,7 +68,7 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({
               size={200}
               level="H"
               includeMargin
-              // Remove the imageSettings to get rid of the Lovable logo
+              // No logo or imageSettings to keep QR code clean
             />
           </div>
           

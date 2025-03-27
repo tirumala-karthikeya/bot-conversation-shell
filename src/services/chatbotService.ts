@@ -77,6 +77,8 @@ let chatbots: Chatbot[] = [
     },
     createdAt: new Date("2023-04-10"),
     updatedAt: new Date("2023-10-01"),
+    chatHeaderColor: "#b4c7c5",
+    welcomeText: "Welcome to the Testing bot! How can I help you today?"
   },
 ];
 

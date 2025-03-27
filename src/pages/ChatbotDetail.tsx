@@ -106,8 +106,9 @@ const ChatbotDetail = () => {
             </Button>
             <div className="flex items-center gap-3">
               <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden"
+                className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
                 style={{ backgroundColor: chatbot.avatarColor }}
+                onClick={() => navigate(`/chatbot/${chatbot.id}`)}
               >
                 {chatbot.iconAvatarImage ? (
                   <img 

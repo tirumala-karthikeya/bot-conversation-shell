@@ -141,7 +141,12 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
       <Card className="bg-white h-full flex flex-col overflow-hidden bot-card">
         <CardContent className="pt-6 pb-0 flex flex-col items-center">
           {renderAvatar()}
-          <h3 className="text-xl font-semibold mt-4 mb-2">{chatbot.name}</h3>
+          <h3 
+            className="text-xl font-semibold mt-4 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+            onClick={() => navigate(`/chatbot/${chatbot.id}`)}
+          >
+            {chatbot.name}
+          </h3>
           
           <div className="text-xs text-muted-foreground mb-2 text-center">
             <p className="font-medium">Unique URL:</p>
