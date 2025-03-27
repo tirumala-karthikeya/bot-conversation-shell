@@ -3,13 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getChatbotById, updateChatbot, deleteChatbot } from "@/services/chatbotService";
-import { ChevronLeft, Settings, Edit, QrCode, Trash2 } from "lucide-react";
+import { ChevronLeft, Edit, QrCode, Trash2 } from "lucide-react";
 import FloatingChat from "@/components/FloatingChat";
 import EditChatbotDialog from "@/components/EditChatbotDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { toast } from "sonner";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const ChatbotDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,12 +26,12 @@ const ChatbotDetail = () => {
   if (!chatbot) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-md animate-fade-in">
           <h2 className="text-2xl font-semibold mb-4">Chatbot Not Found</h2>
           <p className="text-muted-foreground mb-6">
             The chatbot you're looking for doesn't exist or has been removed.
           </p>
-          <Button onClick={() => navigate("/")} className="btn-transition">
+          <Button onClick={() => navigate("/")} className="btn-transition animate-pulse-subtle">
             Return to Dashboard
           </Button>
         </div>
@@ -100,13 +99,13 @@ const ChatbotDetail = () => {
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/")}
-              className="hover:bg-white/20"
+              className="hover:bg-white/20 animate-pulse-subtle"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">
               <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
+                className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden cursor-pointer animate-scale-in"
                 style={{ backgroundColor: chatbot.avatarColor }}
                 onClick={() => navigate(`/chatbot/${chatbot.id}`)}
               >
@@ -143,7 +142,7 @@ const ChatbotDetail = () => {
             <Button 
               variant="ghost" 
               size="icon"
-              className="hover:bg-white/20"
+              className="hover:bg-white/20 animate-slide-in-bottom"
               onClick={handleEditClick}
               title="Edit Chatbot"
             >
@@ -152,28 +151,22 @@ const ChatbotDetail = () => {
             <Button 
               variant="ghost" 
               size="icon"
-              className="hover:bg-white/20"
+              className="hover:bg-white/20 animate-slide-in-bottom"
               onClick={handleQRClick}
               title="Show QR Code"
+              style={{animationDelay: "50ms"}}
             >
               <QrCode className="h-5 w-5" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon"
-              className="hover:bg-white/20 text-red-500"
+              className="hover:bg-white/20 text-red-500 animate-slide-in-bottom"
               onClick={handleDeleteClick}
               title="Delete Chatbot"
+              style={{animationDelay: "100ms"}}
             >
               <Trash2 className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="hover:bg-white/20"
-              title="Settings"
-            >
-              <Settings className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -182,11 +175,11 @@ const ChatbotDetail = () => {
       <main className="flex-1 container mx-auto px-4 py-6 max-w-3xl animate-fade-in-up">
         {/* Static image display if available */}
         {chatbot.staticImage && (
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-8 animate-scale-in">
             <img 
               src={chatbot.staticImage} 
               alt={chatbot.name} 
-              className="max-w-full rounded-lg shadow-md object-contain max-h-[300px]" 
+              className="max-w-full rounded-lg shadow-md object-contain max-h-[300px] hover:scale-105 transition-transform" 
             />
           </div>
         )}

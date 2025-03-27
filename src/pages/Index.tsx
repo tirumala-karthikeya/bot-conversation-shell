@@ -6,6 +6,7 @@ import { getChatbots } from "@/services/chatbotService";
 import ChatbotCard from "@/components/ChatbotCard";
 import { Plus } from "lucide-react";
 import CreateChatbotDialog from "@/components/CreateChatbotDialog";
+import DashboardLayout from "@/components/DashboardLayout";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,55 +39,64 @@ const Index = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold">Your Chatbots</h1>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <Input
-            placeholder="Search chatbots..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="w-full md:w-64"
-          />
-          <Button
-            onClick={handleCreateClick}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Create New Chatbot
-          </Button>
-        </div>
-      </div>
-
-      {filteredChatbots.length === 0 ? (
-        <div className="text-center py-16 bg-gray-50 rounded-lg">
-          <h2 className="text-xl font-semibold mb-2">No chatbots found</h2>
-          <p className="text-muted-foreground mb-6">
-            {searchQuery
-              ? "No chatbots match your search criteria."
-              : "You haven't created any chatbots yet."}
-          </p>
-          <Button onClick={handleCreateClick}>Create Your First Chatbot</Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredChatbots.map((chatbot) => (
-            <ChatbotCard
-              key={chatbot.id}
-              chatbot={chatbot}
-              onDelete={refreshChatbots}
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-8 animate-fade-in">
+          <h1 className="text-3xl font-bold">Your Agents</h1>
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <Input
+              placeholder="Search agents..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full md:w-64 animate-fade-in"
+              style={{animationDelay: "100ms"}}
             />
-          ))}
+            <Button
+              onClick={handleCreateClick}
+              className="flex items-center gap-2 animate-fade-in btn-transition"
+              style={{animationDelay: "200ms"}}
+            >
+              <Plus className="h-5 w-5" />
+              Create New Bot
+            </Button>
+          </div>
         </div>
-      )}
 
-      {/* Create New Chatbot Dialog */}
-      <CreateChatbotDialog
-        isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
-        onSuccess={refreshChatbots}
-      />
-    </div>
+        {filteredChatbots.length === 0 ? (
+          <div className="text-center py-16 bg-gray-50 rounded-lg animate-fade-in-up">
+            <h2 className="text-xl font-semibold mb-2">No agents found</h2>
+            <p className="text-muted-foreground mb-6">
+              {searchQuery
+                ? "No agents match your search criteria."
+                : "You haven't created any agents yet."}
+            </p>
+            <Button onClick={handleCreateClick} className="animate-pulse-subtle">Create Your First Bot</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredChatbots.map((chatbot, index) => (
+              <div 
+                key={chatbot.id} 
+                className="animate-fade-in-up" 
+                style={{animationDelay: `${index * 50}ms`}}
+              >
+                <ChatbotCard
+                  chatbot={chatbot}
+                  onDelete={refreshChatbots}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Create New Chatbot Dialog */}
+        <CreateChatbotDialog
+          isOpen={isCreateDialogOpen}
+          onClose={() => setIsCreateDialogOpen(false)}
+          onSuccess={refreshChatbots}
+        />
+      </div>
+    </DashboardLayout>
   );
 };
 
