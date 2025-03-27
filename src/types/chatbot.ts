@@ -12,4 +12,12 @@ export interface Chatbot {
   };
   createdAt: Date;
   updatedAt: Date;
+  chatLogoImage?: string;
+  iconAvatarImage?: string;
+  staticImage?: string;
+  bodyBackgroundImage?: string;
+  chatHeaderColor?: string;
+  welcomeText?: string;
+  apiKey?: string;
+  analyticsUrl?: string;
 }

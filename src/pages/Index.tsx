@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ChatbotCard from "@/components/ChatbotCard";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,13 @@ import { getChatbots } from "@/services/chatbotService";
 import { PlusCircle, Search } from "lucide-react";
 
 const Index = () => {
-  const chatbots = getChatbots();
+  const [chatbots, setChatbots] = useState(getChatbots());
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Function to refresh the chatbots list
+  const refreshChatbots = () => {
+    setChatbots(getChatbots());
+  };
 
   const filteredChatbots = chatbots.filter(
     (chatbot) =>
@@ -66,7 +71,10 @@ const Index = () => {
               className="animate-fade-in-up"
               style={{ animationDelay: `${0.1 + index * 0.05}s` }}
             >
-              <ChatbotCard chatbot={chatbot} />
+              <ChatbotCard 
+                chatbot={chatbot} 
+                onDelete={refreshChatbots}
+              />
             </div>
           ))}
         </div>

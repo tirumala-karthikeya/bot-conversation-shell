@@ -2,7 +2,7 @@
 import { Chatbot } from "../types/chatbot";
 
 // Sample data - in a real app this would come from an API
-const chatbots: Chatbot[] = [
+let chatbots: Chatbot[] = [
   {
     id: "hospitality-1",
     name: "Hospitality",
@@ -14,6 +14,8 @@ const chatbots: Chatbot[] = [
     },
     createdAt: new Date("2023-09-15"),
     updatedAt: new Date("2023-10-20"),
+    chatHeaderColor: "#b4c7c5",
+    welcomeText: "Hi, this is Ama, your dedicated hotel assistant! How may I assist you today?"
   },
   {
     id: "qsr-pizza-1",
@@ -84,4 +86,25 @@ export const getChatbots = (): Chatbot[] => {
 
 export const getChatbotById = (id: string): Chatbot | undefined => {
   return chatbots.find((chatbot) => chatbot.id === id);
+};
+
+export const updateChatbot = (updatedChatbot: Chatbot): Chatbot => {
+  const index = chatbots.findIndex((chatbot) => chatbot.id === updatedChatbot.id);
+  
+  if (index !== -1) {
+    // Update the updatedAt date
+    updatedChatbot.updatedAt = new Date();
+    
+    // Replace the chatbot in the array
+    chatbots[index] = updatedChatbot;
+    return updatedChatbot;
+  }
+  
+  throw new Error("Chatbot not found");
+};
+
+export const deleteChatbot = (id: string): boolean => {
+  const initialLength = chatbots.length;
+  chatbots = chatbots.filter((chatbot) => chatbot.id !== id);
+  return chatbots.length < initialLength;
 };
