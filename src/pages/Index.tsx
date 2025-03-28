@@ -2,17 +2,44 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getChatbots } from "@/services/chatbotService";
+import { chatbotApi } from "@/services/api";
 import ChatbotCard from "@/components/ChatbotCard";
 import { Plus } from "lucide-react";
 import CreateChatbotDialog from "@/components/CreateChatbotDialog";
 import DashboardLayout from "@/components/DashboardLayout";
+import { Chatbot } from "@/types/chatbot";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [chatbots, setChatbots] = useState(getChatbots());
-  const [filteredChatbots, setFilteredChatbots] = useState(chatbots);
+  const [chatbots, setChatbots] = useState<Chatbot[]>([]);
+  const [filteredChatbots, setFilteredChatbots] = useState<Chatbot[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch chatbots from API
+  const fetchChatbots = async () => {
+    try {
+      setIsLoading(true);
+      const data = await chatbotApi.getChatbots();
+      setChatbots(data);
+    } catch (error) {
+      console.error("Error fetching chatbots:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load chatbots. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load chatbots on component mount
+  useEffect(() => {
+    fetchChatbots();
+  }, []);
 
   // Update filtered bots when search query changes
   useEffect(() => {
@@ -23,11 +50,6 @@ const Index = () => {
     setFilteredChatbots(filtered);
   }, [searchQuery, chatbots]);
 
-  // Refresh the chatbots list
-  const refreshChatbots = () => {
-    setChatbots(getChatbots());
-  };
-
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -36,6 +58,11 @@ const Index = () => {
   // Open create dialog
   const handleCreateClick = () => {
     setIsCreateDialogOpen(true);
+  };
+
+  // Refresh chatbots after create/update/delete
+  const handleChatbotChange = () => {
+    fetchChatbots();
   };
 
   return (
@@ -62,7 +89,15 @@ const Index = () => {
           </div>
         </div>
 
-        {filteredChatbots.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-64 bg-gray-200 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredChatbots.length === 0 ? (
           <div className="text-center py-16 bg-gray-50 rounded-lg animate-fade-in-up">
             <h2 className="text-xl font-semibold mb-2">No agents found</h2>
             <p className="text-muted-foreground mb-6">
@@ -82,7 +117,7 @@ const Index = () => {
               >
                 <ChatbotCard
                   chatbot={chatbot}
-                  onDelete={refreshChatbots}
+                  onDelete={handleChatbotChange}
                 />
               </div>
             ))}
@@ -93,7 +128,7 @@ const Index = () => {
         <CreateChatbotDialog
           isOpen={isCreateDialogOpen}
           onClose={() => setIsCreateDialogOpen(false)}
-          onSuccess={refreshChatbots}
+          onSuccess={handleChatbotChange}
         />
       </div>
     </DashboardLayout>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, X, Mic, MicOff, Send } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { chatbotApi } from "@/services/api";
 
 type MessageType = {
   type: "user" | "bot" | "error";
@@ -10,6 +10,7 @@ type MessageType = {
 };
 
 interface FloatingChatProps {
+  chatbotId: string;
   chatbotName: string;
   headerColor?: string;
   welcomeMessage?: string;
@@ -21,6 +22,7 @@ interface FloatingChatProps {
   iconAvatarImage?: string;
   avatarColor: string;
   apiKey?: string;
+  analyticsUrl?: string;
 }
 
 // Speech recognition setup
@@ -38,6 +40,7 @@ interface SpeechRecognition {
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 const FloatingChat: React.FC<FloatingChatProps> = ({ 
+  chatbotId,
   chatbotName, 
   headerColor = "#3b82f6",
   welcomeMessage = "Hello! How can I help you today?",
@@ -45,7 +48,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   chatLogoImage,
   iconAvatarImage,
   avatarColor,
-  apiKey
+  apiKey,
+  analyticsUrl
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -142,100 +146,27 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const sendMessage = async () => {
     if (!query.trim() || isLoading) return;
 
-    setMessages((prev) => [...prev, { type: "user", content: query }]);
-    setIsLoading(true);
-    
     // Store the query and clear input field
     const userQuery = query;
     setQuery("");
+    
+    // Add user message to chat
+    setMessages((prev) => [...prev, { type: "user", content: userQuery }]);
+    setIsLoading(true);
 
     try {
-      if (apiKey) {
-        // If we have an API key, use it to call the real API
-        const payload = {
-          inputs: {},
-          query: userQuery,
-          response_mode: "streaming",
-          conversation_id: conversationId,
-          user: "user-123",
-          files: []
-        };
-
-        const response = await fetch(`https://api.next-agi.com/v1/chat-messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            Accept: "text/event-stream"
-          },
-          body: JSON.stringify(payload),
-          duplex: "half"
-        } as RequestInit);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        
-        // Add a bot message that we'll update
-        setMessages((prev) => [...prev, { type: "bot", content: "" }]);
-
-        if (reader) {
-          let fullAnswer = "";
-          
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-
-            const text = decoder.decode(value, { stream: true });
-            text.split("\n").forEach((line) => {
-              if (line.startsWith("data: ")) {
-                try {
-                  const eventData = JSON.parse(line.slice(6));
-                  if (eventData.conversation_id) {
-                    setConversationId(eventData.conversation_id);
-                  }
-                  if (eventData.answer) {
-                    // Accumulate the answer chunks
-                    fullAnswer += eventData.answer;
-                    // Update the last message instead of adding a new one
-                    setMessages((prev) => {
-                      const newMessages = [...prev];
-                      newMessages[newMessages.length - 1] = { 
-                        type: "bot", 
-                        content: fullAnswer 
-                      };
-                      return newMessages;
-                    });
-                  }
-                } catch (error) {
-                  console.error("Error parsing SSE event:", error);
-                }
-              }
-            });
-          }
-        }
-      } else {
-        // Simulate API call with timeout
-        setTimeout(() => {
-          // Add bot response based on user query
-          let botResponse = "I'm sorry, I don't have an answer for that right now.";
-          
-          if (userQuery.toLowerCase().includes("hello") || userQuery.toLowerCase().includes("hi")) {
-            botResponse = `Hello! How can I help you with ${chatbotName} today?`;
-          } else if (userQuery.toLowerCase().includes("help")) {
-            botResponse = `I can assist you with information about ${chatbotName}. What specific information do you need?`;
-          } else if (userQuery.toLowerCase().includes("features") || userQuery.toLowerCase().includes("what can you do")) {
-            botResponse = `As a ${chatbotName} assistant, I can help with:\n• Answering common questions\n• Providing information about our services\n• Assisting with troubleshooting\n• Connecting you with human support if needed`;
-          } else {
-            botResponse = `Thank you for your message about "${userQuery}". I'm still learning about ${chatbotName}. Would you like me to forward this to our support team?`;
-          }
-          
-          setMessages(prev => [...prev, { type: "bot", content: botResponse }]);
-        }, 1000);
-      }
+      // Use API service to send message
+      const response = await chatbotApi.sendChatMessage(
+        chatbotId,
+        userQuery,
+        conversationId
+      );
+      
+      // Update conversation ID for future messages
+      setConversationId(response.conversation_id);
+      
+      // Add bot response to chat
+      setMessages(prev => [...prev, { type: "bot", content: response.answer }]);
     } catch (error: any) {
       setMessages((prev) => [
         ...prev,
@@ -243,6 +174,13 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Navigate to analytics dashboard if available
+  const handleAnalyticsClick = () => {
+    if (analyticsUrl) {
+      window.open(analyticsUrl, '_blank');
     }
   };
 
@@ -287,6 +225,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           )}
         </div>
         <span className="font-semibold">{chatbotName}</span>
+        
+        {analyticsUrl && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-xs hover:bg-white/10"
+            onClick={handleAnalyticsClick}
+          >
+            Analytics
+          </Button>
+        )}
       </div>
     );
   };
@@ -300,14 +249,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             backgroundColor: headerColor,
             borderColor: 'transparent'
           }}
-          className="text-white rounded-full p-3 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center chat-button"
+          className="text-white rounded-full p-3 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center chat-button animate-bounce-subtle"
         >
           <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
       ) : (
         <div 
           ref={chatContainerRef}
-          className="bg-white rounded-lg shadow-2xl w-[90vw] sm:w-[350px] md:w-[400px] lg:w-[450px] h-[80vh] sm:h-[600px] md:h-[650px] lg:h-[700px] max-h-[90vh] flex flex-col chat-container"
+          className="bg-white rounded-lg shadow-2xl w-[90vw] sm:w-[350px] md:w-[400px] lg:w-[450px] h-[80vh] sm:h-[600px] md:h-[650px] lg:h-[700px] max-h-[90vh] flex flex-col chat-container animate-scale-in"
         >
           <div 
             className="text-white p-3 sm:p-4 rounded-t-lg flex justify-between items-center"
@@ -320,7 +269,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             {renderAvatar()}
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white hover:text-gray-200"
+              className="text-white hover:text-gray-200 transition-colors"
             >
               <X className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
@@ -330,7 +279,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div
                   className={`message-bubble p-2 sm:p-3 ${
@@ -339,7 +289,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                       : msg.type === "error"
                       ? "error-message"
                       : "bot-message"
-                  } max-w-[85%] sm:max-w-[80%]`}
+                  } max-w-[85%] sm:max-w-[80%] animate-message-appear`}
                   style={{
                     background: msg.type === "user" && backgroundGradient
                       ? `linear-gradient(135deg, ${backgroundGradient.from}, ${backgroundGradient.to})`
@@ -358,7 +308,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             <div ref={messagesEndRef} />
           </div>
           
-          <div className="p-2 sm:p-4 border-t">
+          <div className="p-2 sm:p-4 border-t animate-slide-up">
             <div className="flex gap-2 items-center">
               <input
                 type="text"

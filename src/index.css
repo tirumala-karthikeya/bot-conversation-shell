@@ -1,368 +1,154 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+/* Add new animations for the chat */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 221.2 83% 53.3%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83% 53.3%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+@keyframes scale-in {
+  from { 
+    transform: scale(0.9);
+    opacity: 0;
   }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  to { 
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@keyframes slide-up {
+  from { 
+    transform: translateY(20px);
+    opacity: 0;
   }
-
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+  to { 
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
-@layer components {
-  /* Chat Component Styles */
-  .chat-container {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    border-radius: 12px;
-    transition: all 0.3s ease;
+@keyframes message-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  /* Message styles */
-  .message-bubble {
-    max-width: 85%;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
   }
-
-  .user-message {
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
-    color: white;
-    border-radius: 12px 12px 0 12px;
-  }
-
-  .bot-message {
-    background-color: #f3f4f6;
-    border-radius: 12px 12px 12px 0;
-  }
-
-  .error-message {
-    background-color: #fee2e2;
-    color: #b91c1c;
-  }
-
-  /* Profile card styling */
-  .profile-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin: 10px 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border-left: 4px solid #3b82f6;
-  }
-
-  @media (min-width: 640px) {
-    .profile-card {
-      padding: 12px 16px;
-      margin: 12px 0;
-    }
-  }
-
-  .profile-field {
-    margin: 6px 0;
-    display: flex;
-    flex-direction: column;
-    border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 6px;
-  }
-
-  @media (min-width: 640px) {
-    .profile-field {
-      margin: 8px 0;
-      flex-direction: row;
-      align-items: baseline;
-      padding-bottom: 8px;
-    }
-  }
-
-  .profile-field:last-child {
-    border-bottom: none;
-  }
-
-  .profile-label {
-    font-weight: 600;
-    color: #4b5563;
-    margin-bottom: 2px;
-  }
-
-  @media (min-width: 640px) {
-    .profile-label {
-      min-width: 120px;
-      flex-shrink: 0;
-      margin-bottom: 0;
-    }
-  }
-
-  .profile-value {
-    color: #111827;
-    font-weight: 500;
-  }
-
-  /* Message content styles */
-  .message-content {
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-
-  @media (min-width: 640px) {
-    .message-content {
-      font-size: 0.95rem;
-    }
-  }
-
-  .message-content img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 6px 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  @media (min-width: 640px) {
-    .message-content img {
-      margin: 8px 0;
-    }
-  }
-
-  .message-content strong,
-  .message-content .font-medium {
-    font-weight: 500;
-    color: #111827;
-  }
-
-  /* Pizza description styling */
-  .message-content h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-    color: #1e3a8a;
-  }
-
-  @media (min-width: 640px) {
-    .message-content h3 {
-      font-size: 1.2rem;
-      margin-bottom: 0.5rem;
-    }
-  }
-
-  /* List styling */
-  .message-content ul,
-  .message-content ol {
-    padding-left: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .message-content ul,
-    .message-content ol {
-      padding-left: 1rem;
-      margin-bottom: 0.75rem;
-    }
-  }
-
-  .message-content li {
-    margin-bottom: 0.4rem;
-    list-style-type: none;
-    position: relative;
-    padding-left: 1.25rem;
-  }
-
-  @media (min-width: 640px) {
-    .message-content li {
-      margin-bottom: 0.5rem;
-      padding-left: 1.5rem;
-    }
-  }
-
-  .message-content ul li::before {
-    content: "•";
-    position: absolute;
-    left: 0;
-    color: #3b82f6;
-    font-weight: bold;
-  }
-
-  /* Numbered list styling */
-  .message-content ol {
-    counter-reset: item;
-  }
-
-  .message-content ol li {
-    counter-increment: item;
-  }
-
-  .message-content ol li::before {
-    position: absolute;
-    left: 0;
-    color: #3b82f6;
-    font-weight: bold;
-  }
-
-  /* Display the actual number from the content instead of counters */
-  .message-content ol li.numbered-item::before {
-    content: "";
-  }
-
-  /* Drinks list styling */
-  .message-content ol li {
-    display: block;
-    width: 100%;
-    margin-right: 0;
-  }
-
-  /* Price styling */
-  .price {
-    font-weight: 600;
-    color: #047857;
-  }
-
-  /* Button hover effects */
-  .chat-button:hover {
-    transform: translateY(-2px);
-  }
-
-  /* Input field focus effect */
-  .chat-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-  }
-
-  /* Mobile optimizations */
-  @media (max-width: 639px) {
-    .chat-button {
-      transform: scale(0.95);
-    }
-    
-    .chat-button:hover {
-      transform: scale(0.95) translateY(-2px);
-    }
-  }
-
-  /* Glass card effect */
-  .glass-card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-  }
-  
-  .glass-card:hover {
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    transform: translateY(-3px);
-  }
-
-  /* Bot card animation */
-  .bot-card {
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  
-  .bot-card:hover {
+  50% {
     transform: translateY(-5px);
   }
+}
 
-  /* Button transitions */
-  .btn-transition {
-    transition: all 0.3s ease;
-  }
-  
-  .btn-transition:hover {
-    transform: translateY(-2px);
-  }
+/* Chat component styles */
+.user-message {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  border-radius: 18px 18px 0 18px;
+  animation: message-appear 0.3s ease-out;
+}
 
-  /* Avatar transitions */
-  .avatar-transition {
-    transition: all 0.3s ease;
+.bot-message {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border-radius: 18px 18px 18px 0;
+  animation: message-appear 0.3s ease-out;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 18px 18px 18px 0;
+  animation: message-appear 0.3s ease-out;
+}
+
+.message-content {
+  word-break: break-word;
+}
+
+.message-bubble {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  margin-bottom: 8px;
+}
+
+.chat-button {
+  transition: transform 0.2s ease;
+}
+
+.chat-button:hover {
+  transform: scale(1.05);
+}
+
+.chat-container {
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1),
+              0 8px 10px -6px rgba(0,0,0,0.1);
+}
+
+.chat-input:focus {
+  border-color: #3b82f6;
+}
+
+/* Global animations */
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  
-  .avatar-transition:hover {
-    transform: scale(1.05);
+  50% {
+    opacity: 0.8;
   }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.btn-transition {
+  transition: all 0.2s ease;
+}
+
+.btn-transition:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
