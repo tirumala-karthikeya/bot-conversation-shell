@@ -56,34 +56,32 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="bg-white text-center">
         <DialogHeader>
           <DialogTitle>QR Code for {title}</DialogTitle>
         </DialogHeader>
-        
-        <div className="flex flex-col items-center justify-center p-4">
-          <div ref={qrRef} className="border p-4 rounded-lg bg-white">
-            <QRCodeCanvas
-              value={getFullUrl()}
-              size={200}
-              level="H"
-              includeMargin
-              // No logo or imageSettings to keep QR code clean
-            />
-          </div>
-          
-          <p className="text-sm text-muted-foreground mt-4 text-center">
+        <div className="p-4">
+          <QRCodeCanvas
+            value={getFullUrl()}
+            size={256}
+            level="H"
+            includeMargin
+            // No logo or imageSettings to keep QR code clean
+          />
+          <p className="mt-4 text-sm text-muted-foreground">
             Scan this QR code to open the {title} chatbot
           </p>
-          
-          <p className="text-xs break-all mt-2 text-center max-w-full overflow-hidden">
-            {getFullUrl()}
+          <p className="text-xs text-muted-foreground break-all">
+            <a href={getFullUrl()} target="_blank" rel="noopener noreferrer">
+              {getFullUrl()}
+            </a>
           </p>
         </div>
-        
-        <DialogFooter className="sm:justify-center">
-          <Button onClick={downloadQRCode} className="mt-2">
-            <Download className="mr-2 h-4 w-4" />
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={downloadQRCode}
+          >
             Download QR Code
           </Button>
         </DialogFooter>

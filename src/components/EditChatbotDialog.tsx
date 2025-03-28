@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,9 +83,12 @@ const EditChatbotDialog: React.FC<EditChatbotDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white" aria-describedby="edit-chatbot-description">
         <DialogHeader>
           <DialogTitle className="text-2xl">Edit Chatbot</DialogTitle>
+          <DialogDescription id="edit-chatbot-description">
+            Make changes to your chatbot here. Click save when you're done.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 py-4">

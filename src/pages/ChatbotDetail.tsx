@@ -1,26 +1,38 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { getChatbotById, updateChatbot, deleteChatbot } from "@/services/chatbotService";
+import { chatbotApi } from "@/services/api";
 import { ChevronLeft, Edit, QrCode, Trash2 } from "lucide-react";
 import FloatingChat from "@/components/FloatingChat";
 import EditChatbotDialog from "@/components/EditChatbotDialog";
 import QRCodeDialog from "@/components/QRCodeDialog";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import { toast } from "sonner";
+import { Chatbot } from "@/types/chatbot";
 
 const ChatbotDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [chatbot, setChatbot] = useState(getChatbotById(id || ""));
+  const [chatbot, setChatbot] = useState<Chatbot | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Refresh chatbot data when id changes
-    setChatbot(getChatbotById(id || ""));
+    // Fetch chatbot data using API
+    const fetchChatbot = async () => {
+      try {
+        if (id) {
+          const data = await chatbotApi.getChatbotById(id);
+          setChatbot(data);
+        }
+      } catch (error) {
+        console.error("Error fetching chatbot:", error);
+        toast.error("Failed to load chatbot");
+      }
+    };
+
+    fetchChatbot();
   }, [id]);
 
   if (!chatbot) {
@@ -59,9 +71,10 @@ const ChatbotDetail = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleUpdateChatbot = (updatedChatbot: typeof chatbot) => {
+  const handleUpdateChatbot = async (updatedChatbot: typeof chatbot) => {
     try {
-      const updated = updateChatbot(updatedChatbot);
+      if (!updatedChatbot) return;
+      const updated = await chatbotApi.updateChatbot(updatedChatbot.id, updatedChatbot);
       setChatbot(updated);
       toast.success("Chatbot updated successfully");
       setIsEditDialogOpen(false);
@@ -71,9 +84,9 @@ const ChatbotDetail = () => {
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     try {
-      deleteChatbot(chatbot.id);
+      await chatbotApi.deleteChatbot(chatbot.id);
       toast.success("Chatbot deleted successfully");
       setIsDeleteDialogOpen(false);
       navigate("/");
@@ -187,6 +200,7 @@ const ChatbotDetail = () => {
 
       {/* Floating Chat Component */}
       <FloatingChat 
+        chatbotId={chatbot.id}
         chatbotName={chatbot.name}
         headerColor={chatbot.chatHeaderColor}
         welcomeMessage={chatbot.welcomeText}
@@ -195,6 +209,7 @@ const ChatbotDetail = () => {
         iconAvatarImage={chatbot.iconAvatarImage}
         avatarColor={chatbot.avatarColor}
         apiKey={chatbot.apiKey}
+        analyticsUrl={chatbot.analyticsUrl}
       />
 
       {/* Edit Dialog */}

@@ -1,12 +1,14 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, X, Mic, MicOff, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MessageCircle, X, Mic, MicOff, Send, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { chatbotApi } from "@/services/api";
 
 type MessageType = {
-  type: "user" | "bot" | "error";
+  role: 'user' | 'assistant' | 'error';
   content: string;
+  timestamp?: Date;
 };
 
 interface FloatingChatProps {
@@ -20,7 +22,7 @@ interface FloatingChatProps {
   };
   chatLogoImage?: string;
   iconAvatarImage?: string;
-  avatarColor: string;
+  avatarColor?: string;
   apiKey?: string;
   analyticsUrl?: string;
 }
@@ -42,24 +44,23 @@ const SpeechRecognition = (window as any).SpeechRecognition || (window as any).w
 const FloatingChat: React.FC<FloatingChatProps> = ({ 
   chatbotId,
   chatbotName, 
-  headerColor = "#3b82f6",
+  headerColor = "#f3f4f6",
   welcomeMessage = "Hello! How can I help you today?",
   backgroundGradient,
   chatLogoImage,
   iconAvatarImage,
-  avatarColor,
+  avatarColor = "#3b82f6",
   apiKey,
   analyticsUrl
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<MessageType[]>([
-    { type: "bot", content: welcomeMessage }
+    { role: 'assistant', content: welcomeMessage }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [conversationId, setConversationId] = useState<string>("");
-  
+  const [conversationId, setConversationId] = useState<string>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -100,7 +101,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
-          setQuery(prev => prev + transcript);
+          setInputValue(prev => prev + transcript);
         };
 
         recognition.onerror = (event: any) => {
@@ -143,52 +144,90 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     }
   };
 
-  const sendMessage = async () => {
-    if (!query.trim() || isLoading) return;
-
-    // Store the query and clear input field
-    const userQuery = query;
-    setQuery("");
-    
-    // Add user message to chat
-    setMessages((prev) => [...prev, { type: "user", content: userQuery }]);
-    setIsLoading(true);
+  const sendMessage = async (message: string) => {
+    if (!message.trim() || isLoading) return;
 
     try {
-      // Use API service to send message
-      const response = await chatbotApi.sendChatMessage(
-        chatbotId,
-        userQuery,
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: message } as MessageType
+      ]);
+      setInputValue('');
+      setIsLoading(true);
+
+      const data = await chatbotApi.sendChatMessage(
+        chatbotId, 
+        message, 
         conversationId
       );
       
-      // Update conversation ID for future messages
-      setConversationId(response.conversation_id);
+      // Handle different response structures
+      const responseContent = data.answer || data.message || data.content;
       
-      // Add bot response to chat
-      setMessages(prev => [...prev, { type: "bot", content: response.answer }]);
-    } catch (error: any) {
-      setMessages((prev) => [
+      if (!responseContent) {
+        throw new Error('No response content received');
+      }
+
+      setMessages(prev => [
         ...prev,
-        { type: "error", content: error.message || "Failed to connect to the chat service." }
+        { role: 'assistant', content: responseContent } as MessageType
       ]);
+      
+      // Update conversation ID if provided
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id);
+      }
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      
+      setMessages(prev => [
+        ...prev,
+        { 
+          role: 'error', 
+          content: error instanceof Error 
+            ? error.message 
+            : 'An unexpected error occurred. Please try again.'
+        } as MessageType
+      ]);
+      
+      toast.error(error instanceof Error ? error.message : "Unable to process message");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Navigate to analytics dashboard if available
-  const handleAnalyticsClick = () => {
-    if (analyticsUrl) {
-      window.open(analyticsUrl, '_blank');
-    }
-  };
-
   // Format message content with improved HTML
   const formatMessageContent = (content: string) => {
+    // First fix any incomplete/broken asterisk pairs
+    content = content.replace(/-\s*([^:]+):\*\*\s*([^*]+)($|\n)/g, '- $1: $2$3');
+    
     return content
+      // Format profile information blocks
+      .replace(/(- [^:]+: [^\n]+\n)+/g, (match) => {
+        // Convert each profile line to a styled div
+        const formattedLines = match.split('\n')
+          .filter(line => line.trim().length > 0)
+          .map(line => {
+            const parts = line.match(/- ([^:]+): (.*)/);
+            if (parts) {
+              const [_, field, value] = parts;
+              return `<div class="profile-field"><span class="profile-label">${field}:</span> <span class="profile-value">${value}</span></div>`;
+            }
+            return line;
+          })
+          .join('');
+        
+        return `<div class="profile-card">${formattedLines}</div>`;
+      })
       // Remove asterisks from text (remove bold formatting)
       .replace(/\*\*(.*?)\*\*/g, '$1')
+      // Format headers (### Title)
+      .replace(/###\s+(.*?)($|\n)/g, '<h3 class="text-lg font-semibold mt-3 mb-2">$1</h3>$2')
+      // Fix improperly formatted numbered lists (where number is missing)
+      .replace(/^\.\s+(.*?)($|\n)/gm, '0. $1$2')
+      // Format numbered list items ONLY at the start of a line
+      .replace(/^(\d+)\.?\s+(.*?)($|\n)/gm, '<li class="numbered-item">$1. $2</li>$3')
       // Format bullet points with text (• Text: More text)
       .replace(/•\s+(.*?):\s+(.*?)($|\n)/g, 
         '<li><span class="font-medium">$1:</span> $2</li>$3')
@@ -196,6 +235,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       .replace(/•\s+(.*?)($|\n)/g, '<li>$1</li>$2')
       // Convert bullet lists to proper ul
       .replace(/<li>(.*?)(<\/li>\n*)+/g, '<ul class="list-disc pl-5 my-2">$&</ul>')
+      // Convert numbered lists to proper ol
+      .replace(/<li class="numbered-item">(.*?)(<\/li>\n*)+/g, '<ol class="list-decimal pl-5 my-2">$&</ol>')
+      // Handle images
+      .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="my-3 rounded w-full">')
       // Convert regular line breaks
       .replace(/\n/g, '<br>');
   };
@@ -231,7 +274,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             variant="ghost"
             size="sm"
             className="ml-auto text-xs hover:bg-white/10"
-            onClick={handleAnalyticsClick}
+            onClick={() => window.open(analyticsUrl, '_blank')}
           >
             Analytics
           </Button>
@@ -267,31 +310,33 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             }}
           >
             {renderAvatar()}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsOpen(false)}
               className="text-white hover:text-gray-200 transition-colors"
             >
               <X className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
+            </Button>
           </div>
           
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div
                   className={`message-bubble p-2 sm:p-3 ${
-                    msg.type === "user"
+                    msg.role === "user"
                       ? "user-message"
-                      : msg.type === "error"
+                      : msg.role === "error"
                       ? "error-message"
                       : "bot-message"
                   } max-w-[85%] sm:max-w-[80%] animate-message-appear`}
                   style={{
-                    background: msg.type === "user" && backgroundGradient
+                    background: msg.role === "user" && backgroundGradient
                       ? `linear-gradient(135deg, ${backgroundGradient.from}, ${backgroundGradient.to})`
                       : undefined
                   }}
@@ -310,14 +355,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           
           <div className="p-2 sm:p-4 border-t animate-slide-up">
             <div className="flex gap-2 items-center">
-              <input
+              <Input
                 type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 border rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 chat-input"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="flex-1 chat-input"
                 placeholder="Type your message..."
                 disabled={isLoading}
-                onKeyDown={(e) => e.key === "Enter" && !isLoading && sendMessage()}
+                onKeyDown={(e) => e.key === "Enter" && !isLoading && sendMessage(inputValue)}
               />
               
               <Button
@@ -336,33 +381,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               </Button>
               
               <Button
-                onClick={sendMessage}
+                onClick={() => sendMessage(inputValue)}
                 disabled={isLoading}
                 style={{ backgroundColor: headerColor }}
                 className="rounded-lg text-white transition-colors duration-200"
                 size="icon"
               >
                 {isLoading ? (
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <Loader2 className="animate-spin h-4 w-4" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}

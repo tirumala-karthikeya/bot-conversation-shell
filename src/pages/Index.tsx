@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +5,9 @@ import { chatbotApi } from "@/services/api";
 import ChatbotCard from "@/components/ChatbotCard";
 import { Plus } from "lucide-react";
 import CreateChatbotDialog from "@/components/CreateChatbotDialog";
-import DashboardLayout from "@/components/DashboardLayout";
+import {DashboardLayout}  from "@/components/DashboardLayout";
 import { Chatbot } from "@/types/chatbot";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,7 +15,6 @@ const Index = () => {
   const [filteredChatbots, setFilteredChatbots] = useState<Chatbot[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   // Fetch chatbots from API
   const fetchChatbots = async () => {
@@ -26,11 +24,7 @@ const Index = () => {
       setChatbots(data);
     } catch (error) {
       console.error("Error fetching chatbots:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load chatbots. Please try again later.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load chatbots");
     } finally {
       setIsLoading(false);
     }
@@ -65,8 +59,12 @@ const Index = () => {
     fetchChatbots();
   };
 
+  const handleBotCreated = () => {
+    fetchChatbots(); // Refresh the list when a new bot is created
+  };
+
   return (
-    <DashboardLayout>
+    <DashboardLayout onBotCreated={handleBotCreated}>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-8 animate-fade-in">
           <h1 className="text-3xl font-bold">Your Agents</h1>

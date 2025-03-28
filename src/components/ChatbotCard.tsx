@@ -1,15 +1,14 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Chatbot } from "@/types/chatbot";
 import { Edit, QrCode, BarChart, Trash2, ExternalLink } from "lucide-react";
-import { deleteChatbot, updateChatbot } from "@/services/chatbotService";
 import EditChatbotDialog from "./EditChatbotDialog";
 import QRCodeDialog from "./QRCodeDialog";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 import { toast } from "sonner";
+import { chatbotApi } from "@/services/api";
 
 interface ChatbotCardProps {
   chatbot: Chatbot;
@@ -110,9 +109,29 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleUpdateChatbot = (updatedChatbot: Chatbot) => {
+  const handleUpdateChatbot = async (updatedChatbot: Chatbot) => {
     try {
-      updateChatbot(updatedChatbot);
+      // Log the update attempt
+      console.log('Attempting to update chatbot:', updatedChatbot);
+
+      // Make sure we're sending the correct data structure
+      const updateData = {
+        name: updatedChatbot.name,
+        avatarColor: updatedChatbot.avatarColor,
+        avatarInitial: updatedChatbot.avatarInitial,
+        description: updatedChatbot.description,
+        gradient: updatedChatbot.gradient,
+        chatLogoImage: updatedChatbot.chatLogoImage,
+        iconAvatarImage: updatedChatbot.iconAvatarImage,
+        staticImage: updatedChatbot.staticImage,
+        bodyBackgroundImage: updatedChatbot.bodyBackgroundImage,
+        chatHeaderColor: updatedChatbot.chatHeaderColor,
+        welcomeText: updatedChatbot.welcomeText,
+        apiKey: updatedChatbot.apiKey,
+        analyticsUrl: updatedChatbot.analyticsUrl
+      };
+
+      await chatbotApi.updateChatbot(chatbot.id, updateData);
       toast.success("Chatbot updated successfully");
       setIsEditDialogOpen(false);
       if (onDelete) onDelete(); // Refresh list
@@ -122,17 +141,17 @@ const ChatbotCard: React.FC<ChatbotCardProps> = ({ chatbot, onDelete }) => {
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     try {
-      deleteChatbot(chatbot.id);
+      await chatbotApi.deleteChatbot(chatbot.id);
       toast.success("Chatbot deleted successfully");
       setIsDeleteDialogOpen(false);
       if (onDelete) {
         onDelete();
       }
     } catch (error) {
+      console.error(`Error deleting chatbot ${chatbot.id}:`, error);
       toast.error("Failed to delete chatbot");
-      console.error("Error deleting chatbot:", error);
     }
   };
 

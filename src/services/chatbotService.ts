@@ -1,4 +1,3 @@
-
 import { Chatbot, ChatbotFormData } from "../types/chatbot";
 
 // Sample data - in a real app this would come from an API

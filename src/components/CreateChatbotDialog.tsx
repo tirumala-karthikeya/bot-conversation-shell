@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ChatbotFormData } from "@/types/chatbot";
 import { toast } from "sonner";
-import { createChatbot } from "@/services/chatbotService";
+import { chatbotApi } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
 interface CreateChatbotDialogProps {
@@ -78,13 +77,10 @@ const CreateChatbotDialog: React.FC<CreateChatbotDialogProps> = ({
     setIsLoading(true);
 
     try {
-      const newChatbot = createChatbot(formData);
+      await chatbotApi.createChatbot(formData);
       toast.success("Chatbot created successfully");
       onSuccess();
       onClose();
-      
-      // Navigate to the new chatbot page
-      navigate(`/chatbot/${newChatbot.id}`);
     } catch (error) {
       console.error("Error creating chatbot:", error);
       toast.error("Failed to create chatbot");
@@ -110,7 +106,7 @@ const CreateChatbotDialog: React.FC<CreateChatbotDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-2xl">Create New Chatbot</DialogTitle>
         </DialogHeader>

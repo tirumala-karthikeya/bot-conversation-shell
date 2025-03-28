@@ -1,15 +1,18 @@
-
 import React from "react";
 import Header from "./Header";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  onBotCreated?: () => void;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
+  children,
+  onBotCreated 
+}) => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
+      <Header onBotCreated={onBotCreated} />
       <main className="flex-1 container mx-auto px-4 py-6 md:py-8 animate-fade-in">
         {children}
       </main>
@@ -19,5 +22,3 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     </div>
   );
 };
-
-export default DashboardLayout;

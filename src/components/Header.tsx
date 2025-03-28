@@ -1,41 +1,60 @@
-
-import React from "react";
+import React, { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import CreateChatbotDialog from "./CreateChatbotDialog";
 
-const Header: React.FC = () => {
-  const navigate = useNavigate();
-  
+interface HeaderProps {
+  onBotCreated?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onBotCreated }) => {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const handleCreateClick = () => {
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCreateSuccess = () => {
+    if (onBotCreated) {
+      onBotCreated();
+    }
+  };
+
   return (
-    <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-10 w-full animate-fade-in">
-      <div className="container mx-auto px-4 flex items-center justify-between h-16">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-md flex items-center justify-center overflow-hidden bg-primary/10">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-primary">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-              <path d="M9.1 12a2.1 2.1 0 0 0 0 4.2" />
-              <path d="M14.9 16.2a2.1 2.1 0 0 0 0-4.2" />
-            </svg>
-          </div>
-          <h1 
-            className="text-2xl font-semibold tracking-tight cursor-pointer hover:text-primary transition-colors"
-            onClick={() => navigate("/")}
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center justify-between">
+        <div className="flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-6 w-6"
           >
-            Agents Dashboard
-          </h1>
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+            <line x1="12" y1="22.08" x2="12" y2="12" />
+          </svg>
+          <h1 className="text-lg font-semibold">Agents Dashboard</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <Button 
-            className="flex items-center gap-2 btn-transition animate-pulse-subtle" 
-            variant="default"
-            onClick={() => navigate("/")}
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">Create New Bot</span>
-            <span className="sm:hidden">New</span>
-          </Button>
-        </div>
+
+        <Button 
+          onClick={handleCreateClick}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Create New Bot
+        </Button>
+
+        {/* Create Bot Dialog */}
+        <CreateChatbotDialog
+          isOpen={isCreateDialogOpen}
+          onClose={() => setIsCreateDialogOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
       </div>
     </header>
   );
