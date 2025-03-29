@@ -8,6 +8,7 @@ import CreateChatbotDialog from "@/components/CreateChatbotDialog";
 import {DashboardLayout}  from "@/components/DashboardLayout";
 import { Chatbot } from "@/types/chatbot";
 import { toast } from "sonner";
+import FloatingChat from "@/components/FloatingChat";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,6 +128,18 @@ const Index = () => {
           isOpen={isCreateDialogOpen}
           onClose={() => setIsCreateDialogOpen(false)}
           onSuccess={handleChatbotChange}
+        />
+
+        {/* Floating Chat Component */}
+        <FloatingChat 
+          chatbotId="demo-bot"
+          chatbotName="Demo Assistant"
+          headerColor="#3b82f6"
+          welcomeMessage="Hello! I'm your demo assistant. How can I help you today?"
+          backgroundGradient={{
+            from: "#3b82f6",
+            to: "#60a5fa"
+          }}
         />
       </div>
     </DashboardLayout>

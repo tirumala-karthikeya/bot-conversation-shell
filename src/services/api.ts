@@ -1,7 +1,14 @@
 import { Chatbot, ChatbotFormData } from "../types/chatbot";
 import axios from "axios";
 
+type ChatResponse = {
+  answer: string;
+  conversation_id: string;
+};
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const NEXT_AGI_BASE_URL = import.meta.env.VITE_NEXT_AGI_BASE_URL;
+const NEXT_AGI_API_KEY = import.meta.env.VITE_NEXT_AGI_API_KEY;
 
 // API client for chatbot operations
 export const chatbotApi = {
@@ -159,49 +166,72 @@ export const chatbotApi = {
   },
 
   // Send chat message using chatbot's API key
-  async sendChatMessage(chatbotId: string, message: string, conversationId?: string) {
-    const maxRetries = 3;
-    let attempt = 0;
-    let lastError;
+  async sendChatMessage(chatbotId: string, message: string, conversationId?: string): Promise<ChatResponse> {
+    try {
+      const payload = {
+        inputs: {},
+        query: message,
+        response_mode: "streaming",
+        conversation_id: conversationId || "",
+        user: "abc-123",
+        files: []
+      };
 
-    while (attempt < maxRetries) {
-      try {
-        const response = await axios.post(`${API_URL}/chatbots/${chatbotId}/chat`, {
-          message,
-          conversationId
-        }, {
-          timeout: 10000, // 10-second timeout
-          validateStatus: (status) => status >= 200 && status < 300 // Only resolve for 2xx statuses
-        });
-        return response.data;
-      } catch (error) {
-        lastError = error;
-        if (axios.isAxiosError(error)) {
-          if (error.response) {
-            console.error('Chat error response:', {
-              status: error.response.status,
-              data: error.response.data,
-              headers: error.response.headers
-            });
-            if (error.response.status === 503) {
-              console.warn('Service unavailable, retrying...');
-              attempt++;
-              await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt))); // Exponential backoff
-              continue;
-            }
-            throw new Error(error.response.data.message || 'An unexpected error occurred');
-          } else if (error.request) {
-            console.error('No response received:', error.request);
-            throw new Error('No response from the server. Please check your network connection.');
-          } else {
-            console.error('Error setting up request:', error.message);
-            throw new Error('Error setting up the chat request');
-          }
-        }
-        console.error('Unexpected chat error:', error);
-        throw error;
+      const response = await fetch(`${NEXT_AGI_BASE_URL}/chat-messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${NEXT_AGI_API_KEY}`,
+          "Content-Type": "application/json",
+          Accept: "text/event-stream"
+        },
+        body: JSON.stringify(payload),
+        duplex: "half"
+      } as RequestInit);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (!reader) {
+        throw new Error("Failed to get response reader");
+      }
+      
+      let fullAnswer = "";
+      let conversationIdFromResponse = conversationId || "";
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        text.split("\n").forEach((line) => {
+          if (line.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+              if (eventData.conversation_id) {
+                conversationIdFromResponse = eventData.conversation_id;
+              }
+              if (eventData.answer) {
+                fullAnswer += eventData.answer;
+              }
+            } catch (error) {
+              console.error("Error parsing SSE event:", error);
+            }
+          }
+        });
+      }
+
+      return {
+        answer: fullAnswer,
+        conversation_id: conversationIdFromResponse
+      };
+
+    } catch (error) {
+      console.error("Unexpected chat error:", error);
+      throw error;
     }
-    throw lastError || new Error('Failed to send chat message after multiple attempts.');
   }
 };

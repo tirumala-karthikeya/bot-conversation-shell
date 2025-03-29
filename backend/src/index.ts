@@ -371,10 +371,27 @@ app.post('/api/chatbots/:id/chat', async (req, res) => {
     if (chatbot.rows.length === 0) {
       return res.status(404).json({ error: 'Chatbot not found' });
     }
-    
 
     const botApiKey = chatbot.rows[0].api_key || process.env.NEXT_AGI_API_KEY;
-    const apiBaseUrl = process.env.NEXT_AGI_API_URL || 'https://api.next-agi.com/v1';
+
+    if (!botApiKey) {
+      console.log('No API key found in database, using default API key');
+      if (!process.env.NEXT_AGI_API_KEY) {
+        return res.status(500).json({
+          error: 'Configuration error',
+          details: 'No API key configured for this chatbot or in environment variables'
+        });
+      }
+    }
+
+    const apiBaseUrl = process.env.NEXT_AGI_API_URL;
+    if (!apiBaseUrl) {
+      console.error('No API URL configured');
+      return res.status(500).json({
+        error: 'Configuration error',
+        details: 'API URL not configured'
+      });
+    }
     
     if (!botApiKey) {
       console.error('No API key found for chatbot');
@@ -384,8 +401,20 @@ app.post('/api/chatbots/:id/chat', async (req, res) => {
       });
     }
 
+    if (!apiBaseUrl) {
+      console.error('No API URL configured');
+      return res.status(500).json({
+        error: 'Configuration error',
+        details: 'API URL not configured'
+      });
+    }
+
     try {
-      console.log('Making request to Next AGI API...');
+      console.log('Making request to Next AGI API...', {
+        url: `${apiBaseUrl}/chat-messages`,
+        apiKey: botApiKey.substring(0, 8) + '...', // Log only first 8 chars of API key
+        message: message.substring(0, 50) + '...' // Log only first 50 chars of message
+      });
       
       const payload = {
         inputs: {},
@@ -425,33 +454,38 @@ app.post('/api/chatbots/:id/chat', async (req, res) => {
       }
 
     } catch (apiError) {
-      console.error('Next AGI API Error:', apiError);
+      console.error('Next AGI API Error:', {
+        error: apiError instanceof Error ? apiError.message : 'Unknown error',
+        code: (apiError as any).code,
+        response: (apiError as any).response?.data,
+        status: (apiError as any).response?.status
+      });
       
       if (axios.isAxiosError(apiError)) {
         if (apiError.code === 'ECONNREFUSED' || apiError.code === 'ECONNABORTED') {
           return res.status(503).json({
             error: 'Service unavailable',
-            details: 'Unable to connect to AI service. Please try again later.'
+            details: 'Unable to connect to AI service. Please check your network connection and API configuration.'
           });
         }
 
         if (apiError.response?.status === 401) {
           return res.status(503).json({
             error: 'Authentication failed',
-            details: 'Invalid API key or authentication failed'
+            details: 'Invalid API key or authentication failed. Please check your API key configuration.'
           });
         }
 
         if (apiError.response?.status === 404) {
           return res.status(503).json({
             error: 'Service unavailable',
-            details: 'AI service endpoint not found'
+            details: 'AI service endpoint not found. Please check the API URL configuration.'
           });
         }
 
         return res.status(503).json({
           error: 'AI service error',
-          details: apiError.message || 'Unknown error occurred'
+          details: apiError.response?.data?.message || apiError.message || 'Unknown error occurred'
         });
       }
 

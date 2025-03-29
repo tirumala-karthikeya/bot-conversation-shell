@@ -6,9 +6,14 @@ import { toast } from "sonner";
 import { chatbotApi } from "@/services/api";
 
 type MessageType = {
-  role: 'user' | 'assistant' | 'error';
+  type: 'user' | 'bot' | 'error';
   content: string;
-  timestamp?: Date;
+  timestamp: Date;
+};
+
+type ChatResponse = {
+  answer: string;
+  conversation_id?: string;
 };
 
 interface FloatingChatProps {
@@ -54,9 +59,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   analyticsUrl
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
+  const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<MessageType[]>([
-    { role: 'assistant', content: welcomeMessage }
+    { type: 'bot', content: welcomeMessage, timestamp: new Date() }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -101,7 +106,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
-          setInputValue(prev => prev + transcript);
+          setQuery(prev => prev + transcript);
         };
 
         recognition.onerror = (event: any) => {
@@ -144,54 +149,48 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     }
   };
 
-  const sendMessage = async (message: string) => {
-    if (!message.trim() || isLoading) return;
+  const sendMessage = async () => {
+    if (!query.trim() || isLoading) return;
+
+    setIsLoading(true);
+    setMessages((prev) => [...prev, { type: "user", content: query, timestamp: new Date() }]);
+    
+    const currentQuery = query;
+    setQuery("");
 
     try {
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', content: message } as MessageType
-      ]);
-      setInputValue('');
-      setIsLoading(true);
-
-      const data = await chatbotApi.sendChatMessage(
-        chatbotId, 
-        message, 
-        conversationId
-      );
+      // Add temporary bot message
+      setMessages((prev) => [...prev, { type: "bot", content: "", timestamp: new Date() }]);
       
-      // Handle different response structures
-      const responseContent = data.answer || data.message || data.content;
+      const response = await chatbotApi.sendChatMessage(currentQuery, conversationId) as ChatResponse;
       
-      if (!responseContent) {
-        throw new Error('No response content received');
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
       }
-
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: responseContent } as MessageType
-      ]);
       
-      // Update conversation ID if provided
-      if (data.conversation_id) {
-        setConversationId(data.conversation_id);
-      }
-
-    } catch (error) {
-      console.error('Chat error:', error);
-      
-      setMessages(prev => [
-        ...prev,
-        { 
-          role: 'error', 
-          content: error instanceof Error 
-            ? error.message 
-            : 'An unexpected error occurred. Please try again.'
-        } as MessageType
-      ]);
-      
-      toast.error(error instanceof Error ? error.message : "Unable to process message");
+      // Update the last message with the response
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = { 
+          type: "bot", 
+          content: response.answer,
+          timestamp: new Date()
+        };
+        return newMessages;
+      });
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      setMessages((prev) => {
+        const newMessages = prev.slice(0, -1);
+        return [
+          ...newMessages,
+          { 
+            type: "error", 
+            content: error.message || "Failed to connect to the chat service.",
+            timestamp: new Date()
+          }
+        ];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -320,31 +319,25 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             </Button>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50">
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                style={{ animationDelay: `${index * 100}ms` }}
+                className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`message-bubble p-2 sm:p-3 ${
-                    msg.role === "user"
-                      ? "user-message"
-                      : msg.role === "error"
-                      ? "error-message"
-                      : "bot-message"
-                  } max-w-[85%] sm:max-w-[80%] animate-message-appear`}
-                  style={{
-                    background: msg.role === "user" && backgroundGradient
-                      ? `linear-gradient(135deg, ${backgroundGradient.from}, ${backgroundGradient.to})`
-                      : undefined
-                  }}
+                  className={`p-2 sm:p-3 rounded-lg max-w-[85%] sm:max-w-[80%] ${
+                    msg.type === "user"
+                      ? "bg-blue-500 text-white"
+                      : msg.type === "error"
+                      ? "bg-red-100 text-red-800 border border-red-300"
+                      : "bg-white text-gray-800 border border-gray-200"
+                  }`}
                 >
                   <div 
-                    className="message-content text-sm sm:text-base"
+                    className="text-sm sm:text-base"
                     dangerouslySetInnerHTML={{
-                      __html: formatMessageContent(msg.content)
+                      __html: msg.content ? formatMessageContent(msg.content) : ''
                     }}
                   />
                 </div>
@@ -353,16 +346,15 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             <div ref={messagesEndRef} />
           </div>
           
-          <div className="p-2 sm:p-4 border-t animate-slide-up">
+          <div className="p-2 sm:p-4 border-t">
             <div className="flex gap-2 items-center">
               <Input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                className="flex-1 chat-input"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="flex-1"
                 placeholder="Type your message..."
                 disabled={isLoading}
-                onKeyDown={(e) => e.key === "Enter" && !isLoading && sendMessage(inputValue)}
+                onKeyDown={(e) => e.key === "Enter" && !isLoading && sendMessage()}
               />
               
               <Button
@@ -381,7 +373,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               </Button>
               
               <Button
-                onClick={() => sendMessage(inputValue)}
+                onClick={() => sendMessage()}
                 disabled={isLoading}
                 style={{ backgroundColor: headerColor }}
                 className="rounded-lg text-white transition-colors duration-200"
